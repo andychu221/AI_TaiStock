@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "ai": "claude",
+    "week": 1,
+    "date": "2026-06-22",
+    "action": "buy",
+    "ticker": "2330",
+    "name": "台積電",
+    "shares": 120,
+    "price": 2390,
+    "note": ""
+  }
+]
