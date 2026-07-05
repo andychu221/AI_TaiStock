@@ -80,21 +80,37 @@ function todayStr() {
 
 // ---------- 主流程 ----------
 (async function init() {
-  const { config, transactions, prices, journal } = await loadData();
-  const dates = buildDateAxis(prices, config.start_date);
+  // 分頁切換一定要能動，跟資料讀取/繪圖成功與否無關，所以最先綁定
+  setupTabs();
 
+  let config, transactions, prices, journal;
+  try {
+    ({ config, transactions, prices, journal } = await loadData());
+  } catch (err) {
+    console.error('讀取 data/ 底下的 JSON 失敗', err);
+    document.querySelector('main').insertAdjacentHTML('afterbegin',
+      '<div class="empty"><b>資料讀取失敗</b>請確認 data/config.json 等檔案存在且格式正確(可以直接打開該檔案網址看看)。</div>');
+    return;
+  }
+
+  const dates = buildDateAxis(prices, config.start_date);
   const seriesByAI = {};
   config.ais.forEach(ai => {
     seriesByAI[ai.id] = computeSeries(ai.id, transactions, prices, dates, config.initial_capital);
   });
 
-  renderScoreboard(config, seriesByAI);
-  renderChart(config, dates, seriesByAI);
-  renderHoldings(config, seriesByAI, prices);
-  renderTransactions(config, transactions);
-  renderJournal(config, journal);
-  setupTabs();
+  // 每一塊各自 try/catch，避免其中一塊出錯（例如圖表函式庫沒載入）
+  // 就連帶讓其他區塊(持股/交易/週報)也顯示不出來
+  safeRun(() => renderScoreboard(config, seriesByAI));
+  safeRun(() => renderChart(config, dates, seriesByAI));
+  safeRun(() => renderHoldings(config, seriesByAI, prices));
+  safeRun(() => renderTransactions(config, transactions));
+  safeRun(() => renderJournal(config, journal));
 })();
+
+function safeRun(fn) {
+  try { fn(); } catch (err) { console.error(err); }
+}
 
 function renderScoreboard(config, seriesByAI) {
   const el = document.getElementById('scoreboard');
@@ -126,6 +142,12 @@ function renderScoreboard(config, seriesByAI) {
 let mainChart = null;
 function renderChart(config, dates, seriesByAI) {
   const ctx = document.getElementById('chart-main');
+
+  if (typeof Chart === 'undefined') {
+    ctx.parentElement.insertAdjacentHTML('beforeend',
+      '<div class="empty"><b>圖表元件載入失敗</b>不影響其他頁面，重新整理一次通常就會恢復。</div>');
+    return;
+  }
   const datasets = config.ais.map(ai => ({
     label: ai.name,
     data: seriesByAI[ai.id].map(p => (((p.value - config.initial_capital) / config.initial_capital) * 100).toFixed(2)),
