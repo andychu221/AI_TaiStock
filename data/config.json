@@ -1,0 +1,10 @@
+{
+  "ais": [
+    { "id": "claude",  "name": "Claude",  "color": "#E8A24C" },
+    { "id": "chatgpt", "name": "ChatGPT", "color": "#45D6B4" },
+    { "id": "gemini",  "name": "Gemini",  "color": "#9C8CFF" }
+  ],
+  "initial_capital": 1000000,
+  "start_date": "2026-07-06",
+  "currency": "TWD"
+}
