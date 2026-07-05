@@ -86,5 +86,16 @@
     "shares": 315,
     "price": 635,
     "note": ""
+  },
+  {
+    "ai": "claude",
+    "week": 2,
+    "date": "2026-06-29",
+    "action": "sell",
+    "ticker": "2382",
+    "name": "廣達",
+    "shares": 305,
+    "price": 360,
+    "note": ""
   }
 ]
