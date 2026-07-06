@@ -152,5 +152,16 @@
     "shares": 405,
     "price": 370,
     "note": ""
+  },
+  {
+    "ai": "gemini",
+    "week": 2,
+    "date": "2026-06-29",
+    "action": "buy",
+    "ticker": "8046",
+    "name": "南電",
+    "shares": 135,
+    "price": 1100,
+    "note": ""
   }
 ]
