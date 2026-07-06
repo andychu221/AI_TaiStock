@@ -4,24 +4,38 @@ const getLogoUrl = (domain) => `https://getlogo.dev/logos/${domain}?token=pub_97
 const LOGOS = {
   claude: getLogoUrl('anthropic.com'),
   chatgpt: getLogoUrl('openai.com'),
-  gemini: getLogoUrl('google.com') // Google 的 G 圖示，最適合圓餅圖
+  gemini: getLogoUrl('google.com')
 };
+
+// 安全抓取 JSON，防止 404 或檔案毀損導致 Safari 拋出 SyntaxError
+async function fetchSafeJson(url, fallback) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.warn(`[警告] 檔案獲取失敗 ${url} (HTTP ${res.status})`);
+      return fallback;
+    }
+    const text = await res.text();
+    return JSON.parse(text);
+  } catch (e) {
+    console.error(`[錯誤] 解析 JSON 失敗 ${url}:`, e);
+    return fallback;
+  }
+}
 
 async function loadData() {
   const bust = 't=' + Date.now();
   const [config, transactions, prices, journal] = await Promise.all([
-    fetch(`data/config.json?${bust}`).then(r => r.json()),
-    fetch(`data/transactions.json?${bust}`).then(r => r.json()),
-    fetch(`data/prices.json?${bust}`).then(r => r.json()),
-    fetch(`data/journal.json?${bust}`).then(r => r.json()),
+    fetchSafeJson(`data/config.json?${bust}`, { ais: [], initial_capital: 1000000, start_date: '2026-06-22' }),
+    fetchSafeJson(`data/transactions.json?${bust}`, []),
+    fetchSafeJson(`data/prices.json?${bust}`, {}),
+    fetchSafeJson(`data/journal.json?${bust}`, []),
   ]);
   return { config, transactions, prices, journal };
 }
 
 function fmtMoney(n) { return Math.round(n).toLocaleString('zh-Hant-TW'); }
 function fmtPct(n) { return (n >= 0 ? '+' : '') + n.toFixed(2) + '%'; }
-
-// 產生 img 標籤供各處使用，由外部 CSS 控制大小
 function getIconHtml(aiId) { 
   return LOGOS[aiId] ? `<img src="${LOGOS[aiId]}" alt="${aiId}">` : ''; 
 }
@@ -106,8 +120,17 @@ let mainChart = null;
 (async function init() {
   setupTabs();
   let config, transactions, prices, journal;
-  try { ({ config, transactions, prices, journal } = await loadData()); } 
-  catch (err) { console.error(err); return; }
+  
+  // 加上 try catch 確保某個環節壞掉時不會整頁白掉
+  try { 
+    ({ config, transactions, prices, journal } = await loadData()); 
+  } catch (err) { 
+    console.error("資料載入發生未預期錯誤:", err); 
+    return; 
+  }
+
+  // 確保 config 正確載入
+  if(!config || !config.ais) return;
 
   const dates = buildDateAxis(prices, config.start_date);
   const seriesByAI = {};
@@ -220,7 +243,7 @@ function renderChart(config, dates, seriesByAI, bmSeries) {
     label: ai.name,
     data: seriesByAI[ai.id].map(p => (((p.value - config.initial_capital) / config.initial_capital) * 100).toFixed(2)),
     borderColor: ai.color,
-    // [修復]: 拿掉可能導致 Safari 掛掉的 8 碼帶透明度 Hex (ai.color + '22')，換為標準 6 碼安全色
+    // [修復]: 已拿掉會導致 Safari 崩潰的 8 碼 Hex 色碼，純粹使用安全 6 碼實色
     backgroundColor: ai.color, 
     borderWidth: 2,
     pointRadius: 0, tension: 0.25,
