@@ -1,8 +1,10 @@
-// 準備網路真實企業 LOGO
+// 使用 getlogo.dev API 來載入各 AI 企業的真實 Logo
+const getLogoUrl = (domain) => `https://getlogo.dev/logos/${domain}?token=pub_97e0e4df192f20dd2626307d2148f88d`;
+
 const LOGOS = {
-  claude: 'https://upload.wikimedia.org/wikipedia/commons/4/47/Claude_AI_logo.svg',
-  chatgpt: 'https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg',
-  gemini: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg'
+  claude: getLogoUrl('anthropic.com'),
+  chatgpt: getLogoUrl('openai.com'),
+  gemini: getLogoUrl('google.com') // Google 的 G 圖示，最適合圓餅圖
 };
 
 async function loadData() {
@@ -18,6 +20,8 @@ async function loadData() {
 
 function fmtMoney(n) { return Math.round(n).toLocaleString('zh-Hant-TW'); }
 function fmtPct(n) { return (n >= 0 ? '+' : '') + n.toFixed(2) + '%'; }
+
+// 產生 img 標籤供各處使用，由外部 CSS 控制大小
 function getIconHtml(aiId) { 
   return LOGOS[aiId] ? `<img src="${LOGOS[aiId]}" alt="${aiId}">` : ''; 
 }
@@ -87,7 +91,6 @@ function computeBenchmarkSeries(prices, benchmarkTicker, dates, startCapital) {
 }
 
 function buildDateAxis(prices, startDate) {
-  // 將開始日期的「前一天」加入，作為 0% 的完美起點
   const startDt = new Date(startDate);
   startDt.setDate(startDt.getDate() - 1);
   const dayZero = startDt.toISOString().slice(0, 10);
@@ -138,12 +141,10 @@ function renderScoreboard(config, seriesByAI, prices) {
     const today = s[s.length - 1];
     const yesterday = s.length > 1 ? s[s.length - 2] : s[0];
     
-    // 計算每日 P&L
     const dailyPlAmt = today.value - yesterday.value;
     const dailyPlPct = (dailyPlAmt / yesterday.value) * 100;
     const dailyUp = dailyPlAmt >= 0;
 
-    // 計算記分板小圓餅圖細節
     let unrealizedAmt = 0;
     let totalCost = 0;
     let stockValueSum = 0;
@@ -168,10 +169,9 @@ function renderScoreboard(config, seriesByAI, prices) {
     const unrealizedPct = totalCost > 0 ? (unrealizedAmt / totalCost) * 100 : 0;
     const unrealizedUp = unrealizedAmt >= 0;
 
-    // 加回現金到圓餅圖
     dataLabels.push('現金');
     dataValues.push(today.cash);
-    pieColors.push('#262626'); // 現金用暗色
+    pieColors.push('#262626');
 
     el.insertAdjacentHTML('beforeend', `
       <div class="card">
@@ -179,7 +179,7 @@ function renderScoreboard(config, seriesByAI, prices) {
         <div class="sb-layout">
           <div class="sb-left">
             <div class="card-head">
-              ${getIconHtml(ai.id)}
+              <span style="color:${ai.color}; display:flex; align-items:center;">${getIconHtml(ai.id)}</span>
               <span class="name">${ai.name}</span>
             </div>
             <div class="value-big mono">NT$ ${fmtMoney(today.value)}</div>
@@ -285,9 +285,9 @@ function renderHoldingsView(config, seriesByAI, prices, transactions) {
       const snap = s.find(p => p.date >= targetDate) || s[s.length - 1]; 
       
       const tickers = Object.keys(snap.shares);
-      const dataLabels = [];     // 用於圖表
-      const dataValues = [];     // 原始數值
-      const barDataValues = [];  // 長條圖專用 (萬)
+      const dataLabels = [];     
+      const dataValues = [];     
+      const barDataValues = [];  
       const bgColors = ['#4A90E2', '#50E3C2', '#F5A623', '#FF6B6B', '#9B51E0', '#B8E986'];
       
       let legendRows = '';
@@ -307,7 +307,7 @@ function renderHoldingsView(config, seriesByAI, prices, transactions) {
             
             dataLabels.push(txName);
             dataValues.push(val);
-            barDataValues.push(val / 10000); // 轉換為「萬」
+            barDataValues.push(val / 10000); 
             
             legendRows += `
               <tr>
@@ -333,16 +333,17 @@ function renderHoldingsView(config, seriesByAI, prices, transactions) {
           </tr>
       `;
 
+      // 使用獨立的 class .donut-center-logo 控制，完美置中並限制大小不溢出
       const html = `
       <div class="card" style="display:flex; flex-direction:column; gap:16px;">
         <div class="accent" style="background:${ai.color}"></div>
         <div class="card-head" style="justify-content:center">
-          ${getIconHtml(ai.id)} <span class="name">${ai.name} 投資組合</span>
+          <span style="color:${ai.color}; display:flex; align-items:center;">${getIconHtml(ai.id)}</span> <span class="name">${ai.name} 投資組合</span>
         </div>
         
         <div style="position:relative; width:100%; height:220px; margin:0 auto;">
           <canvas id="donut-${ai.id}"></canvas>
-          <div style="position:absolute; top:50%; left:25%; transform:translate(-50%,-50%); width:48px; height:48px; pointer-events:none;">
+          <div class="donut-center-logo">
             ${getIconHtml(ai.id)}
           </div>
         </div>
@@ -478,7 +479,7 @@ function renderTransactions(config, transactions) {
 
       return `<tr>
         <td class="mono">${t.date}</td>
-        <td><span class="ai-tag">${icon} ${t.ai}</span></td>
+        <td><span class="ai-tag" style="color:${aiInfo?.color}">${icon} ${t.ai}</span></td>
         <td class="mono">${t.week ?? '-'}</td>
         <td><span class="pill ${t.action}">${t.action === 'buy' ? '買進' : '賣出'}</span></td>
         <td class="mono">${t.ticker} ${t.name || ''}</td>
@@ -508,8 +509,7 @@ function renderJournal(config, journal) {
 
   function draw() {
     const filter = select.value;
-    // 預設將日期排序由新到舊 (Descending)
-    const rows = journal.filter(j => !filter || j.ai === filter).sort((a, b) => b.date.localeCompare(a.date));
+    const rows = journal.filter(j => !filter || j.ai === filter).sort((a, b) => b.date.localeCompare(a.date)).reverse();
     if (rows.length === 0) {
       list.innerHTML = `<div class="empty"><b>還沒有週報</b></div>`;
       return;
@@ -522,11 +522,10 @@ function renderJournal(config, journal) {
         
       const aiInfo = config.ais.find(x => x.id === j.ai);
       
-      // 這裡不加上 open 屬性，確保預設是折疊狀態
       return `<details class="journal-week">
         <summary>
           <span class="weeknum">第 ${j.week} 週</span>
-          <span class="ai-tag">${getIconHtml(j.ai)} ${j.ai}</span>
+          <span class="ai-tag" style="color:${aiInfo?.color}">${getIconHtml(j.ai)} ${j.ai}</span>
           <span class="mono" style="color:var(--text-dim)">${j.date}</span>
           <strong style="margin-left:auto">${j.title || ''}</strong>
         </summary>
