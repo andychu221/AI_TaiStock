@@ -4,15 +4,15 @@ const getLogoUrl = (domain) => `https://getlogo.dev/logos/${domain}?token=pub_97
 const LOGOS = {
   claude: getLogoUrl('anthropic.com'),
   chatgpt: getLogoUrl('openai.com'),
-  gemini: getLogoUrl('google.com')
+  gemini: getLogoUrl('google.com') // Google 的 G 圖示
 };
 
-// 安全抓取 JSON，防止 404 或檔案毀損導致 Safari 拋出 SyntaxError
+// 安全抓取 JSON，防止 404 網頁導致 Safari 拋出 SyntaxError
 async function fetchSafeJson(url, fallback) {
   try {
     const res = await fetch(url);
     if (!res.ok) {
-      console.warn(`[警告] 檔案獲取失敗 ${url} (HTTP ${res.status})`);
+      console.warn(`[狀態] 檔案獲取失敗或尚未建立 ${url} (HTTP ${res.status})`);
       return fallback;
     }
     const text = await res.text();
@@ -36,6 +36,7 @@ async function loadData() {
 
 function fmtMoney(n) { return Math.round(n).toLocaleString('zh-Hant-TW'); }
 function fmtPct(n) { return (n >= 0 ? '+' : '') + n.toFixed(2) + '%'; }
+
 function getIconHtml(aiId) { 
   return LOGOS[aiId] ? `<img src="${LOGOS[aiId]}" alt="${aiId}">` : ''; 
 }
@@ -105,11 +106,12 @@ function computeBenchmarkSeries(prices, benchmarkTicker, dates, startCapital) {
 }
 
 function buildDateAxis(prices, startDate) {
-  const startDt = new Date(startDate);
+  const safeStartDate = startDate || '2026-06-22';
+  const startDt = new Date(safeStartDate);
   startDt.setDate(startDt.getDate() - 1);
   const dayZero = startDt.toISOString().slice(0, 10);
 
-  const set = new Set([dayZero, startDate, new Date().toISOString().slice(0, 10)]);
+  const set = new Set([dayZero, safeStartDate, new Date().toISOString().slice(0, 10)]);
   Object.values(prices).forEach(map => Object.keys(map).forEach(d => { if(d >= dayZero) set.add(d); }));
   return Array.from(set).sort();
 }
@@ -121,7 +123,6 @@ let mainChart = null;
   setupTabs();
   let config, transactions, prices, journal;
   
-  // 加上 try catch 確保某個環節壞掉時不會整頁白掉
   try { 
     ({ config, transactions, prices, journal } = await loadData()); 
   } catch (err) { 
@@ -243,8 +244,7 @@ function renderChart(config, dates, seriesByAI, bmSeries) {
     label: ai.name,
     data: seriesByAI[ai.id].map(p => (((p.value - config.initial_capital) / config.initial_capital) * 100).toFixed(2)),
     borderColor: ai.color,
-    // [修復]: 已拿掉會導致 Safari 崩潰的 8 碼 Hex 色碼，純粹使用安全 6 碼實色
-    backgroundColor: ai.color, 
+    backgroundColor: ai.color, // 安全的 6 碼實色
     borderWidth: 2,
     pointRadius: 0, tension: 0.25,
   }));
@@ -280,6 +280,9 @@ function renderChart(config, dates, seriesByAI, bmSeries) {
 let holdingsCharts = [];
 function renderHoldingsView(config, seriesByAI, prices, transactions) {
   const container = document.getElementById('holdings-container');
+  // 如果 container 不存在（例如 HTML 尚未更新成最新版本），則相容舊 ID
+  if (!container) return; 
+
   const weeks = [...new Set(transactions.map(t => t.week))].filter(w => w).sort((a,b)=>b-a);
   const weekSelectHtml = `<div class="filters" style="margin-bottom:16px;">
     <select id="holdings-week-select">
@@ -422,7 +425,7 @@ function renderTransactions(config, transactions) {
   const actionSelect = document.getElementById('tx-filter-action');
   const tickerInput = document.getElementById('tx-filter-ticker');
   
-  if(aiSelect.options.length === 1) {
+  if(aiSelect && aiSelect.options.length === 1) {
     config.ais.forEach(ai => aiSelect.insertAdjacentHTML('beforeend', `<option value="${ai.id}">${ai.name}</option>`));
   }
 
@@ -468,9 +471,9 @@ function renderTransactions(config, transactions) {
   });
 
   function draw() {
-    const aiFilter = aiSelect.value;
-    const actionFilter = actionSelect.value;
-    const tickerFilter = tickerInput.value.toLowerCase().trim();
+    const aiFilter = aiSelect ? aiSelect.value : '';
+    const actionFilter = actionSelect ? actionSelect.value : '';
+    const tickerFilter = tickerInput ? tickerInput.value.toLowerCase().trim() : '';
 
     let rows = enrichedTx.filter(t => {
       const matchAi = !aiFilter || t.ai === aiFilter;
@@ -519,22 +522,23 @@ function renderTransactions(config, transactions) {
     }).join('');
   }
   
-  aiSelect.addEventListener('change', draw);
-  actionSelect.addEventListener('change', draw);
-  tickerInput.addEventListener('input', draw);
-  document.querySelector(`#tx-table th[data-sort="date"]`).classList.add('desc');
+  if(aiSelect) aiSelect.addEventListener('change', draw);
+  if(actionSelect) actionSelect.addEventListener('change', draw);
+  if(tickerInput) tickerInput.addEventListener('input', draw);
+  const sortHeader = document.querySelector(`#tx-table th[data-sort="date"]`);
+  if (sortHeader) sortHeader.classList.add('desc');
   draw();
 }
 
 function renderJournal(config, journal) {
   const list = document.getElementById('journal-list');
   const select = document.getElementById('journal-filter-ai');
-  if(select.options.length === 1) {
+  if(select && select.options.length === 1) {
     config.ais.forEach(ai => select.insertAdjacentHTML('beforeend', `<option value="${ai.id}">${ai.name}</option>`));
   }
 
   function draw() {
-    const filter = select.value;
+    const filter = select ? select.value : '';
     const rows = journal.filter(j => !filter || j.ai === filter).sort((a, b) => b.date.localeCompare(a.date)).reverse();
     if (rows.length === 0) {
       list.innerHTML = `<div class="empty"><b>還沒有週報</b></div>`;
@@ -559,7 +563,7 @@ function renderJournal(config, journal) {
       </details>`;
     }).join('');
   }
-  select.addEventListener('change', draw);
+  if(select) select.addEventListener('change', draw);
   draw();
 }
 
