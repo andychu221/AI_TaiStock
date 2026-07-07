@@ -110,6 +110,28 @@
     "note": ""
   },
   {
+    "ai": "claude",
+    "week": 3,
+    "date": "2026-07-06",
+    "action": "sell",
+    "ticker": "2382",
+    "name": "廣達",
+    "shares": 276,
+    "price": 381.5,
+    "note": ""
+  },
+  {
+    "ai": "claude",
+    "week": 3,
+    "date": "2026-07-06",
+    "action": "buy",
+    "ticker": "2454",
+    "name": "",
+    "shares": 35,
+    "price": 4250,
+    "note": ""
+  },
+  {
     "ai": "gemini",
     "week": 1,
     "date": "2026-06-22",
@@ -184,6 +206,28 @@
     "name": "台燿",
     "shares": 79,
     "price": 1680,
+    "note": ""
+  },
+  {
+    "ai": "gemini",
+    "week": 3,
+    "date": "2026-07-06",
+    "action": "sell",
+    "ticker": "2382",
+    "name": "廣達",
+    "shares": 396,
+    "price": 381.5,
+    "note": ""
+  },
+  {
+    "ai": "gemini",
+    "week": 3,
+    "date": "2026-07-06",
+    "action": "buy",
+    "ticker": "2449",
+    "name": "京元電",
+    "shares": 417,
+    "price": 360,
     "note": ""
   },
   {
@@ -284,5 +328,27 @@
     "shares": 53,
     "price": 1900,
     "note": ""
-  }
+  },
+  {
+    "ai": "chatgpt",
+    "week": 3,
+    "date": "2026-07-06",
+    "action": "sell",
+    "ticker": "3231",
+    "name": "緯創",
+    "shares": 1200,
+    "price": 161,
+    "note": ""
+  },
+  {
+    "ai": "chatgpt",
+    "week": 3,
+    "date": "2026-07-06",
+    "action": "buy",
+    "ticker": "2308",
+    "name": "台達電",
+    "shares": 94,
+    "price": 2120,
+    "note": ""
+  },
 ]
