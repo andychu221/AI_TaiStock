@@ -260,7 +260,7 @@ function renderChart(config, dates, seriesByAI, bmSeries) {
   
   if(bmSeries && bmSeries.length > 0) {
     datasets.push({
-      label: `(${config.benchmark_ticker})`,
+      label: `${config.benchmark_ticker}`,
       data: bmSeries.map(p => (((p.value - config.initial_capital) / config.initial_capital) * 100).toFixed(2)),
       borderColor: '#9CA3AF', 
       backgroundColor: 'transparent', 
