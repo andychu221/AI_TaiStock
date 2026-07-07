@@ -133,10 +133,10 @@
   },
   {
     "ai": "gemini",
-    "week": 1,
+    "week": 2,
     "date": "2026-06-23",
     "action": "buy",
-    "ticker": "2",
+    "ticker": "6274",
     "name": "台燿",
     "shares": 85,
     "price": 1750,
