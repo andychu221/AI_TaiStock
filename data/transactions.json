@@ -178,12 +178,12 @@
   {
     "ai": "chatgpt",
     "week": 1,
-    "date": "2026-06-24",
+    "date": "2026-06-22",
     "action": "buy",
     "ticker": "2330",
     "name": "台積電",
-    "shares": 125,
-    "price": 2390,
+    "shares": 120,
+    "price": 2455,
     "note": ""
   },
   {
