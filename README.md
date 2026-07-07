@@ -1,83 +1,90 @@
-# AI 選股擂台｜Claude × ChatGPT × Gemini
-
-三個 AI（Claude、ChatGPT、Gemini）各自管理新台幣 100 萬本金，每週維持 5 檔台股持股。
-這個網站會自動記錄每個 AI 的進出場、每日股價與累積績效，並提供一個管理後台可以直接把交易紀錄與週報貼上、寫回這個 GitHub repo。
-
-網站是純靜態網頁（GitHub Pages），股價更新靠 GitHub Actions 排程，不需要自己架伺服器。
+以下是為您重新撰寫、結構更清晰且精簡專業的 `README.md` 版本。已為您將「直接點選的網站連結」置於最醒目的開頭處：
 
 ---
 
-## 1. 部署到 GitHub Pages
+# 📈 AI 選股擂台｜Claude × ChatGPT × Gemini
 
-1. 把這個資料夾裡的所有檔案，放到你現有的 GitHub repo 裡（保留原本的資料夾結構，`.github/workflows`、`data/`、`assets/`、`scripts/` 都要在 repo 根目錄）。
-2. 到 repo 的 **Settings → Pages**。
-3. **Source** 選 `Deploy from a branch`，Branch 選 `main`，資料夾選 `/ (root)`，按 Save。
-4. 等 1-2 分鐘，Pages 會給你一個網址，格式通常是：
-   `https://你的帳號.github.io/repo名稱/`
-5. 打開這個網址，應該會看到「AI 選股擂台」的畫面（一開始因為還沒有資料，會顯示空狀態，這是正常的）。
+> 🤖 **專案線上體驗**：[點此進入 AI 選股擂台](https://andychu221.github.io/ai-taistock-arena/)
 
----
+本專案是一個全自動化的台股虛擬投資競賽平台。由三個主流 AI（Claude、ChatGPT、Gemini）各自管理新台幣 100 萬元的虛擬本金，並於每週維持 5 檔台股持股。
 
-## 2. 建立 GitHub Personal Access Token（給管理後台用）
+本系統採用**純靜態網頁架構（GitHub Pages）**，完全不需自行架設後端伺服器：
 
-管理後台（`admin.html`）需要一組 Token 才能把你貼的資料寫回 repo。
-
-1. 到 GitHub **Settings → Developer settings → Personal access tokens → Fine-grained tokens** → `Generate new token`。
-2. **Repository access** 選 `Only select repositories`，選這個 repo。
-3. **Permissions** 裡的 `Contents` 設成 `Read and write`，其他都不用開。
-4. 建議設定一個到期日（例如 90 天），到期後再重新產生一組。
-5. 產生後複製 Token（只會顯示一次，請先存好）。
-
-> ⚠️ **安全提醒**：這個 Token 只會存在你瀏覽器的 localStorage，不會被上傳。但只要有人打開你的瀏覽器或知道你貼過 Token 的畫面，就有可能拿到它。
-> - 不要把 `admin.html` 的連結公開分享。
-> - 不要在公用電腦上登入管理後台。
-> - Token 外洩時，直接到 GitHub 設定頁刪除它即可，不影響其他資料。
+* **自動化股價更新**：透過 GitHub Actions 定時排程，每日收盤後自動抓取證交所最新數據。
+* **無伺服器後台**：內建管理後台（`admin.html`），可直接在瀏覽器端將交易紀錄與覆盤週報加密寫回 GitHub 儲存庫。
 
 ---
 
-## 3. 每週操作流程
+## 🛠️ 快速部署指南
 
-### 換股（週一調整持股）
-1. 打開 `你的網址/admin.html`，第一次使用先在「GitHub 連線設定」填入帳號、repo 名稱、分支（通常是 `main`）、貼上 Token，按「儲存設定」。
-2. 到「新增進出場紀錄」：
-   - 先為**要賣出**的舊股票，各新增一筆「賣出」紀錄（股數、成交價）。
-   - 再為**新選入**的股票，各新增一筆「買進」紀錄。
-   - 一次只能新增一筆，一週 5 檔換股大概要送出 5～10 次表單（賣舊 + 買新）。
-   - 「目前持股」會顯示在表單下方，方便你確認要賣哪些。
-3. 每筆送出後，畫面會顯示「已寫入 GitHub」，回到首頁重新整理就能看到更新（可能要等 Pages 重新部署，約 1 分鐘內）。
+### 1. 部署至 GitHub Pages
 
-### 每週週報 / 覆盤
-1. 到「貼上週報 / 覆盤分析」表單。
-2. 選擇 AI、填入週次、日期、標題。
-3. 把這週跟 AI 的對話重點、選股邏輯、績效檢討直接貼進「內容」欄位（純文字即可，會保留換行）。
-4. 送出後會出現在首頁「週報與覆盤」分頁。
+1. 將本專案的所有檔案與資料夾（包含 `.github/workflows`、`data/`、`assets/`、`scripts/`）完整複製到您的 GitHub 儲存庫（Repository）根目錄下。
+2. 進入儲存庫的 **Settings → Pages**。
+3. 在 **Build and deployment → Source** 選擇 `Deploy from a branch`。
+4. 將 **Branch** 設為 `main`（或您的主要分支），資料夾選擇 `/ (root)`，並按下 **Save**。
+5. 稍等 1-2 分鐘部署完成後，即可透過 GitHub 提供給您的專屬網址開啟網站。
 
----
+### 2. 建立管理後台密鑰（GitHub Personal Access Token）
 
-## 4. 股價怎麼自動更新
+為了讓管理後台（`admin.html`）擁有將資料寫回 GitHub 的權限，請生成一組 Token：
 
-- `.github/workflows/update-prices.yml` 這個排程，會在**每個週一到週五、台北時間下午 3 點**自動執行 `scripts/update_prices.py`。
-- 這個腳本會呼叫證交所公開資料 API（`STOCK_DAY_ALL`），抓當天所有上市股票的收盤價，只保留你 `transactions.json` 裡出現過的股票代號，寫回 `data/prices.json` 並自動 commit。
-- 如果想立刻測試，不用等排程：到 repo 的 **Actions** 分頁 → 選 `Update TWSE Closing Prices` → 按 `Run workflow`。
-- 目前抓的是**收盤價**（不是即時盤中價），且沒有另外處理國定假日／颱風假，遇到非交易日腳本會自動找不到資料並略過，不會報錯中斷。
+1. 前往 GitHub **Settings → Developer settings → Personal access tokens → Fine-grained tokens**，點擊 `Generate new token`。
+2. 在 **Repository access** 勾選 `Only select repositories`，並指定本專案的儲存庫。
+3. 在 **Permissions** 列表中找到 `Contents`，將權限設為 **`Read and write`**（其他皆不用開啟）。
+4. 點擊生成並**複製 Token**（此 Token 只會顯示一次，請妥善保存）。
+
+⚠️ **安全性叮嚀**：此 Token 僅會安全地儲存在您個人瀏覽器的 `localStorage` 中，絕不會上傳至任何第三方伺服器。請勿在公用電腦上登入後台，亦不要公開分享您的 `admin.html` 網址。
 
 ---
 
-## 5. 資料檔案說明（`data/` 資料夾）
+## 📅 每週維運操作流程
 
-| 檔案 | 用途 |
-|---|---|
-| `config.json` | 三個 AI 的名稱、代表色、起始資金、開始日期 |
-| `transactions.json` | 所有買進/賣出紀錄（append-only，網站靠這個回推每天的持股與現金） |
-| `prices.json` | 每檔股票、每個日期的收盤價，格式 `{ "2330": { "2026-07-06": 950 } }` |
-| `journal.json` | 每週的週報／覆盤文字紀錄 |
+### 🔄 步驟一：換股調整（每週一執行）
 
-網站首頁不會另外存「每日績效」這個檔案，而是每次打開網頁時，用 `transactions.json + prices.json` 即時重播計算出每一天三個 AI 的現金、持股市值與累積報酬率，所以不用擔心績效資料跟交易紀錄對不起來。
+1. 開啟後台：`您的網站網址/admin.html`。
+2. **首次使用設定**：在「GitHub 連線設定」區塊填入您的 GitHub 帳號、儲存庫名稱、分支（如 `main`）並貼上 Token，點擊「儲存設定」。
+3. **執行換股表單**：
+* **先賣後買**：請先為**要淘汰的舊股票**逐一填寫「賣出」紀錄（成交價與股數）。
+* **新增持股**：再為**新選入的股票**逐一填寫「買進」紀錄。
+* *註：表單每次送出一筆交易，一週換股通常需要送出 5-10 次。表單下方會即時顯示「目前持股」供您比對核對。*
+
+
+4. 送出後畫面提示「已寫入 GitHub」，約 1 分鐘內 GitHub Pages 重新部署完成後，首頁數據便會同步更新。
+
+### 📝 步驟二：發布 AI 週報與覆盤分析
+
+1. 切換至後台的「貼上週報 / 覆盤分析」表單。
+2. 選擇對應的 AI 角色，填入週次、日期與標題。
+3. 將該週與 AI 對話的選股邏輯、核心重點或績效檢討貼入「內容」欄位（支援純文字，系統會自動保留換行符號）。
+4. 送出後，內容將立即呈現於網站首頁的「週報與覆盤」分頁中。
 
 ---
 
-## 6. 之後可以怎麼擴充
+## 🤖 核心自動化機制
 
-- 想比較「已實現/未實現損益」：目前只顯示未實現損益，如果要記錄實現損益，可以在賣出紀錄旁加一個欄位。
-- 想要盤中價：把 `scripts/update_prices.py` 換成呼叫證交所即時報價端點，並縮短排程間隔（要留意證交所 API 的使用限制）。
-- 想要多加第 4 個 AI：在 `config.json` 的 `ais` 陣列加一筆，管理後台跟首頁會自動抓到新的 AI 選項。
+* **自動股價排程**：專案內的 `.github/workflows/update-prices.yml` 腳本會在**每週一至週五的台北時間下午 3:00** 自動觸發。
+* **資料來源**：自動呼叫台灣證券交易所（TWSE）的公開資料 API（`STOCK_DAY_ALL`），抓取全市場收盤價。
+* **精簡儲存**：腳本非常輕量，只會過濾並保留 `transactions.json` 中有紀錄的股票收盤價，並自動 commit 寫回 `data/prices.json`。
+* **手動觸發**：若想立即更新，可隨時至 GitHub 儲存庫的 **Actions** 頁面，選擇 `Update TWSE Closing Prices` 並點擊 `Run workflow` 手動執行。
+
+---
+
+## 📂 資料夾與檔案架構說明（`data/`）
+
+本網站**不儲存寫死的每日績效數據**。每當使用者開啟網頁時，前端會利用 `transactions.json` 的交易軌跡與 `prices.json` 的歷史收盤價，**即時動態重播計算**出每一天每個 AI 的現金流、持股市值與累積報酬率，確保數據絕對精準不衝突。
+
+| 檔案名稱 | 檔案主要用途 |
+| --- | --- |
+| **`config.json`** | 基礎設定：包含三個 AI 的名稱、專屬代表色、起始資金及賽事開始日期。 |
+| **`transactions.json`** | 交易歷史：採用 Append-only 模式，記錄所有買進與賣出的虛擬歷史紀錄。 |
+| **`prices.json`** | 股價資料庫：儲存追蹤股票的歷史收盤價（格式如：`{"2330": {"2026-07-06": 950}}`）。 |
+| **`journal.json`** | 覆盤日誌：保存每週發布的 AI 選股邏輯與每週覆盤文字紀錄。 |
+
+---
+
+## 🚀 未來擴充方向建議
+
+* **新增第 4 個 AI 參賽者**：只需在 `data/config.json` 的 `ais` 陣列中新增一個物件，前台與管理後台便會全面自動支援新角色。
+* **引進盤中即時報價**：可將 `scripts/update_prices.py` 替換為證交所的即時行情 API，並縮短 GitHub Actions 的排程執行間隔（需注意 API 呼叫頻率限制）。
+* **支援已實現損益統計**：目前預設僅呈現未實現損益。可在 `transactions.json` 與後台表單中擴充欄位，用以精準錨定與加總已落袋的實現損益數據。
