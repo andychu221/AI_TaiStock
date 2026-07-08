@@ -26,11 +26,31 @@ const TICKER_DOMAINS = {
   '8046': 'nanyapcb.com.tw',    // 南電
   '8210': 'chenbro.com',        // 勤誠
 };
-function getTickerIconHtml(ticker, size) {
+function tickerColor(ticker) {
+  const palette = ['#4A90E2', '#50E3C2', '#F5A623', '#FF6B6B', '#9B51E0', '#B8E986', '#F0F8FF', '#FFD700'];
+  let hash = 0;
+  for (let i = 0; i < ticker.length; i++) hash = ticker.charCodeAt(i) + ((hash << 5) - hash);
+  return palette[Math.abs(hash) % palette.length];
+}
+
+// Logo 載入失敗時，換成「該公司名稱首字 + 專屬顏色」的圓形色塊，取代破圖或空白
+window.tickerLogoFallback = function (imgEl, initial, color, px) {
+  if (!imgEl || !imgEl.parentNode) return;
+  const span = document.createElement('span');
+  span.textContent = initial;
+  span.style.cssText = `display:inline-flex;align-items:center;justify-content:center;width:${px}px;height:${px}px;border-radius:50%;background:${color};color:#fff;font-size:${Math.max(9, Math.round(px * 0.55))}px;font-weight:700;vertical-align:middle;flex-shrink:0;`;
+  imgEl.parentNode.replaceChild(span, imgEl);
+};
+
+function getTickerIconHtml(ticker, name, size, color) {
   const domain = TICKER_DOMAINS[ticker];
   const px = size || 18;
-  if (!domain) return '';
-  return `<img src="${getLogoUrl(domain)}" alt="${ticker}" style="width:${px}px;height:${px}px;object-fit:contain;border-radius:4px;vertical-align:middle;" onerror="this.style.display='none'">`;
+  const col = color || tickerColor(ticker);
+  const initial = ((name || ticker).trim().charAt(0)) || ticker.charAt(0);
+  if (!domain) {
+    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${px}px;height:${px}px;border-radius:50%;background:${col};color:#fff;font-size:${Math.max(9, Math.round(px * 0.55))}px;font-weight:700;vertical-align:middle;flex-shrink:0;">${initial}</span>`;
+  }
+  return `<img src="${getLogoUrl(domain)}" alt="${ticker}" style="width:${px}px;height:${px}px;object-fit:contain;border-radius:4px;vertical-align:middle;" onerror='window.tickerLogoFallback(this, "${initial}", "${col}", ${px})'>`;
 }
 
 // 安全抓取 JSON，防止 404 網頁導致 Safari 拋出 SyntaxError
@@ -183,6 +203,48 @@ if (typeof Chart !== 'undefined') {
 
 function safeRun(fn) { try { fn(); } catch (err) { console.error(err); } }
 
+// ---- 自訂外部 Tooltip：避開 .card{overflow:hidden} 造成的裁切問題 ----
+function scoreboardExternalTooltip(context) {
+  const { chart, tooltip } = context;
+  let el = document.getElementById('sb-external-tooltip');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sb-external-tooltip';
+    el.style.position = 'fixed';
+    el.style.pointerEvents = 'none';
+    el.style.zIndex = '9999';
+    el.style.background = '#FFF3CD';
+    el.style.border = '1px solid #E8C77E';
+    el.style.borderRadius = '8px';
+    el.style.padding = '8px 10px';
+    el.style.color = '#1a1a1a';
+    el.style.fontFamily = "'Inter', sans-serif";
+    el.style.fontSize = '12px';
+    el.style.whiteSpace = 'nowrap';
+    el.style.boxShadow = '0 6px 18px rgba(0,0,0,0.4)';
+    el.style.transition = 'opacity 0.08s ease';
+    document.body.appendChild(el);
+  }
+
+  if (tooltip.opacity === 0) {
+    el.style.opacity = '0';
+    return;
+  }
+
+  const titleLines = tooltip.title || [];
+  const bodyLines = (tooltip.body || []).map(b => b.lines).flat();
+  let html = '';
+  if (titleLines.length) html += `<div style="font-weight:700; margin-bottom:4px;">${titleLines.join('')}</div>`;
+  bodyLines.forEach(line => { if (line) html += `<div>${line}</div>`; });
+  el.innerHTML = html;
+
+  const canvasRect = chart.canvas.getBoundingClientRect();
+  el.style.opacity = '1';
+  el.style.left = (canvasRect.left + tooltip.caretX) + 'px';
+  el.style.top = (canvasRect.top + tooltip.caretY) + 'px';
+  el.style.transform = 'translate(-50%, -115%)';
+}
+
 function renderScoreboard(config, seriesByAI, prices, transactions) {
   const el = document.getElementById('scoreboard');
   el.innerHTML = '';
@@ -271,6 +333,7 @@ function renderScoreboard(config, seriesByAI, prices, transactions) {
       </div>
     `);
 
+// ---- 自訂外部 Tooltip：避開 .card{overflow:hidden} 造成的裁切問題 ----
     const ctx = document.getElementById(`sb-donut-${ai.id}`);
 
     scoreboardCharts.push(new Chart(ctx, {
@@ -281,16 +344,8 @@ function renderScoreboard(config, seriesByAI, prices, transactions) {
         plugins: {
           legend: { display: false },
           tooltip: {
-            enabled: true,
-            displayColors: false,
-            backgroundColor: '#FFF3CD',
-            borderColor: '#E8C77E',
-            borderWidth: 1,
-            padding: 10,
-            titleColor: '#1a1a1a',
-            titleFont: { weight: '700' },
-            bodyColor: '#3a3a2a',
-            bodyFont: { size: 12 },
+            enabled: false,
+            external: scoreboardExternalTooltip,
             callbacks: {
               title: (items) => {
                 const it = tooltipItems[items[0].dataIndex];
@@ -392,50 +447,92 @@ function makeEndpointLabelPlugin(config) {
   };
 }
 
+function getPeriodStartIndex(dates, period) {
+  if (!period || period === 'ALL') return 0;
+  const lastDate = new Date(dates[dates.length - 1]);
+  let startDate = new Date(lastDate);
+  if (period === '1D') startDate.setDate(startDate.getDate() - 1);
+  else if (period === '1W') startDate.setDate(startDate.getDate() - 7);
+  else if (period === '1M') startDate.setMonth(startDate.getMonth() - 1);
+  else if (period === 'YTD') startDate = new Date(lastDate.getFullYear(), 0, 1);
+  else if (period === '1Y') startDate.setFullYear(startDate.getFullYear() - 1);
+  else return 0;
+
+  const startStr = startDate.toISOString().slice(0, 10);
+  const idx = dates.findIndex(d => d >= startStr);
+  return idx === -1 ? 0 : idx;
+}
+
 function renderChart(config, dates, seriesByAI, bmSeries) {
   const ctx = document.getElementById('chart-main');
   if (typeof Chart === 'undefined') return;
 
-  if (mainChart) mainChart.destroy();
+  function draw(period) {
+    if (mainChart) mainChart.destroy();
 
-  const datasets = config.ais.map(ai => ({
-    label: ai.name,
-    data: seriesByAI[ai.id].map(p => (((p.value - config.initial_capital) / config.initial_capital) * 100).toFixed(2)),
-    borderColor: ai.color,
-    backgroundColor: ai.color, // 安全的 6 碼實色
-    borderWidth: 2,
-    pointRadius: 0, tension: 0.25,
-  }));
-  
-  if(bmSeries && bmSeries.length > 0) {
-    datasets.push({
-      label: `${config.benchmark_ticker}`,
-      data: bmSeries.map(p => (((p.value - config.initial_capital) / config.initial_capital) * 100).toFixed(2)),
-      borderColor: '#9CA3AF', 
-      backgroundColor: 'transparent', 
-      borderDash: [5, 5],
-      borderWidth: 1.5, 
-      pointRadius: 0, tension: 0.25,
+    const startIdx = getPeriodStartIndex(dates, period);
+    const viewDates = dates.slice(startIdx);
+    const rebase = period && period !== 'ALL';
+
+    const datasets = config.ais.map(ai => {
+      const series = seriesByAI[ai.id].slice(startIdx);
+      const baseValue = rebase ? series[0].value : config.initial_capital;
+      return {
+        label: ai.name,
+        data: series.map(p => (((p.value - baseValue) / baseValue) * 100).toFixed(2)),
+        borderColor: ai.color,
+        backgroundColor: ai.color, // 安全的 6 碼實色
+        borderWidth: 2,
+        pointRadius: 0, tension: 0.25,
+      };
+    });
+
+    if (bmSeries && bmSeries.length > 0) {
+      const bmSlice = bmSeries.slice(startIdx);
+      const bmBase = rebase ? bmSlice[0].value : config.initial_capital;
+      datasets.push({
+        label: `${config.benchmark_name || config.benchmark_ticker}`,
+        data: bmSlice.map(p => (((p.value - bmBase) / bmBase) * 100).toFixed(2)),
+        borderColor: '#EF4444', // Benchmark 固定用紅色
+        backgroundColor: 'transparent',
+        borderDash: [5, 5],
+        borderWidth: 1.5,
+        pointRadius: 0, tension: 0.25,
+      });
+    }
+
+    mainChart = new Chart(ctx, {
+      type: 'line', data: { labels: viewDates, datasets },
+      plugins: [makeEndpointLabelPlugin(config)],
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        layout: { padding: { right: 74, top: 12 } },
+        plugins: { 
+          legend: { labels: { color: '#FFFFFF' } }, 
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.formattedValue}%` } } 
+        },
+        scales: {
+          x: { ticks: { color: '#FFFFFF', maxTicksLimit: 8 }, grid: { color: '#262626' } },
+          y: { ticks: { color: '#FFFFFF', callback: v => v + '%' }, grid: { color: '#262626' } },
+        }
+      }
     });
   }
 
-  mainChart = new Chart(ctx, {
-    type: 'line', data: { labels: dates, datasets },
-    plugins: [makeEndpointLabelPlugin(config)],
-    options: {
-      responsive: true,
-      interaction: { mode: 'index', intersect: false },
-      layout: { padding: { right: 74, top: 12 } },
-      plugins: { 
-        legend: { labels: { color: '#FFFFFF' } }, 
-        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.formattedValue}%` } } 
-      },
-      scales: {
-        x: { ticks: { color: '#FFFFFF', maxTicksLimit: 8 }, grid: { color: '#262626' } },
-        y: { ticks: { color: '#FFFFFF', callback: v => v + '%' }, grid: { color: '#262626' } },
-      }
-    }
-  });
+  const periodBar = document.getElementById('chart-period-filter');
+  if (periodBar && !periodBar.dataset.bound) {
+    periodBar.querySelectorAll('.period-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        periodBar.querySelectorAll('.period-btn').forEach(b => b.classList.remove('primary'));
+        btn.classList.add('primary');
+        draw(btn.dataset.period);
+      });
+    });
+    periodBar.dataset.bound = '1';
+  }
+
+  draw('ALL');
 }
 
 let holdingsCharts = [];
@@ -491,6 +588,7 @@ function renderHoldingsView(config, seriesByAI, prices, transactions) {
 
       const dataLabels = [];
       const dataValues = [];
+      const barLabels = [];
       const barDataValues = [];
 
       let legendRows = '';
@@ -507,11 +605,12 @@ function renderHoldingsView(config, seriesByAI, prices, transactions) {
 
         dataLabels.push(td.txName);
         dataValues.push(td.val);
+        barLabels.push(td.txName);
         barDataValues.push(td.val / 10000);
 
         legendRows += `
           <tr>
-            <td><span class="color-box" style="background:${cStr}"></span>${getTickerIconHtml(td.ticker, 16)} <span class="mono">${td.ticker}</span> ${td.txName}</td>
+            <td><span class="color-box" style="background:${cStr}"></span>${getTickerIconHtml(td.ticker, td.txName, 16, cStr)} <span class="mono">${td.ticker}</span> ${td.txName}</td>
             <td class="mono" style="text-align:right">${fmtMoney(td.val)}</td>
             <td class="mono" style="text-align:right">${pctOfPort.toFixed(1)}%</td>
             <td class="mono" style="text-align:right; color:${up?'var(--up)':'var(--down)'}">${fmtPct(td.unplPct)}</td>
@@ -528,7 +627,6 @@ function renderHoldingsView(config, seriesByAI, prices, transactions) {
 
       dataLabels.push('現金');
       dataValues.push(derivedCash);
-      barDataValues.push(derivedCash / 10000);
       const cashPct = snap.value > 0 ? (derivedCash / snap.value) * 100 : 0;
       legendRows += `
           <tr>
@@ -548,8 +646,8 @@ function renderHoldingsView(config, seriesByAI, prices, transactions) {
         <div class="donut-wrap" style="position:relative; width:100%; height:220px; margin:0 auto;">
           <canvas id="donut-${ai.id}"></canvas>
           <div class="donut-center-text">
-            <div class="lbl">未實現 P&amp;L</div>
-            <div class="val mono" style="color:#fff; font-size:20px; font-weight:800;">
+            <div class="lbl" style="color:#fff;">未實現 P&amp;L</div>
+            <div class="val mono" style="color:${unrealizedUp ? 'var(--up)' : 'var(--down)'}; font-size:20px; font-weight:800;">
               ${fmtMoney(unrealizedAmt)}<br/>${fmtPct(unrealizedPct)}
             </div>
           </div>
@@ -572,11 +670,12 @@ function renderHoldingsView(config, seriesByAI, prices, transactions) {
           plugins: { 
             legend: { display: false },
             tooltip: {
+              // 預設 title 就會顯示股票名稱，label 不再重複顯示名稱，避免出現兩次
               callbacks: {
                 label: (item) => {
                   const val = item.parsed;
                   const pct = snap.value > 0 ? (val / snap.value) * 100 : 0;
-                  return `${item.label}: NT$ ${fmtMoney(val)} (${pct.toFixed(1)}%)`;
+                  return `NT$ ${fmtMoney(val)} (${pct.toFixed(1)}%)`;
                 }
               }
             }
@@ -589,7 +688,7 @@ function renderHoldingsView(config, seriesByAI, prices, transactions) {
       const ctxBar = document.getElementById(`bar-${ai.id}`);
       holdingsCharts.push(new Chart(ctxBar, {
         type: 'bar',
-        data: { labels: dataLabels, datasets: [{ data: barDataValues, backgroundColor: [...bgColors.slice(0, tickerData.length), '#262626'], borderRadius: 4 }] },
+        data: { labels: barLabels, datasets: [{ data: barDataValues, backgroundColor: bgColors.slice(0, tickerData.length), borderRadius: 4 }] },
         options: { 
           plugins: { 
             legend: { display: false },
@@ -697,7 +796,7 @@ function renderTransactions(config, transactions) {
         <td><span class="ai-tag" style="color:${aiInfo?.color}; display:flex; align-items:center; gap:6px;">${icon} ${t.ai}</span></td>
         <td class="mono">${t.week ?? '-'}</td>
         <td><span class="pill ${t.action}">${t.action === 'buy' ? '買進' : '賣出'}</span></td>
-        <td class="mono"><span style="display:inline-flex;align-items:center;gap:6px;">${getTickerIconHtml(t.ticker)} ${t.ticker} ${t.name || ''}</span></td>
+        <td class="mono"><span style="display:inline-flex;align-items:center;gap:6px;">${getTickerIconHtml(t.ticker, t.name)} ${t.ticker} ${t.name || ''}</span></td>
         <td class="mono">${t.shares}</td>
         <td class="mono">${t.price}</td>
         <td class="mono">${fmtMoney(t.amount)}</td>
