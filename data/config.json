@@ -1,8 +1,20 @@
 {
   "ais": [
-    { "id": "claude",  "name": "Claude",  "color": "#E8A24C" },
-    { "id": "chatgpt", "name": "ChatGPT", "color": "#45D6B4" },
-    { "id": "gemini",  "name": "Gemini",  "color": "#9C8CFF" }
+    {
+      "id": "claude",
+      "name": "Claude",
+      "color": "#E8A24C"
+    },
+    {
+      "id": "chatgpt",
+      "name": "ChatGPT",
+      "color": "#45D6B4"
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini",
+      "color": "#9C8CFF"
+    }
   ],
   "initial_capital": 1000000,
   "start_date": "2026-06-22",
@@ -11,5 +23,6 @@
   "sell_fee_rate": 0.001425,
   "sell_tax_rate": 0.003,
   "benchmark_ticker": "0050",
-  "benchmark_name": "元大台灣50"
+  "benchmark_name": "元大台灣50",
+  "benchmark": "00984A"
 }
