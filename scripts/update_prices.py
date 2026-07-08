@@ -25,7 +25,7 @@ def main():
     prices = load_json("data/prices.json", {})
 
     tickers = {t["ticker"] for t in transactions if isinstance(t, dict) and t.get("ticker")}
-    benchmark = config.get("benchmark", "0050")
+    benchmark = config.get("benchmark_ticker", "0050")
     if benchmark:
         tickers.add(benchmark)
         
