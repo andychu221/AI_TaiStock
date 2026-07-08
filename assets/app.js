@@ -296,9 +296,9 @@ function renderChart(config, dates, seriesByAI, bmSeries) {
     datasets.push({
       label: `${config.benchmark_ticker}`,
       data: bmSeries.map(p => (((p.value - config.initial_capital) / config.initial_capital) * 100).toFixed(2)),
-      borderColor: '#9CA3AF', 
+      borderColor: '#FF3B30', 
       backgroundColor: 'transparent', 
-      borderDash: [5, 5],
+      //borderDash: [5, 5],
       borderWidth: 1.5, 
       pointRadius: 0, tension: 0.25,
     });
