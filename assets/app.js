@@ -7,52 +7,6 @@ const LOGOS = {
   gemini: getLogoUrl('google.com') // Google 的 G 圖示
 };
 
-// 個股 -> 公司官網網域對照表，用來顯示公司 Logo (與 AI 卡片邏輯一致)
-const TICKER_DOMAINS = {
-  '2059': 'kingslide.com.tw',   // 川湖
-  '2308': 'deltaww.com',        // 台達電
-  '2327': 'yageo.com',          // 國巨
-  '2330': 'tsmc.com',           // 台積電
-  '2382': 'quantatw.com',       // 廣達
-  '2383': 'emc.com.tw',         // 台光電
-  '2449': 'kyec.com.tw',        // 京元電
-  '2454': 'mediatek.com',       // 聯發科
-  '3017': 'avc.co',             // 奇鋐
-  '3037': 'unimicron.com',      // 欣興
-  '3231': 'wistron.com',        // 緯創
-  '3665': 'bizlinktech.com',    // 貿聯-KY
-  '3711': 'aseglobal.com',      // 日月光
-  '6274': 'tuc.com.tw',         // 台燿
-  '8046': 'nanyapcb.com.tw',    // 南電
-  '8210': 'chenbro.com',        // 勤誠
-};
-function tickerColor(ticker) {
-  const palette = ['#4A90E2', '#50E3C2', '#F5A623', '#FF6B6B', '#9B51E0', '#B8E986', '#F0F8FF', '#FFD700'];
-  let hash = 0;
-  for (let i = 0; i < ticker.length; i++) hash = ticker.charCodeAt(i) + ((hash << 5) - hash);
-  return palette[Math.abs(hash) % palette.length];
-}
-
-// Logo 載入失敗時，換成「該公司名稱首字 + 專屬顏色」的圓形色塊，取代破圖或空白
-window.tickerLogoFallback = function (imgEl, initial, color, px) {
-  if (!imgEl || !imgEl.parentNode) return;
-  const span = document.createElement('span');
-  span.textContent = initial;
-  span.style.cssText = `display:inline-flex;align-items:center;justify-content:center;width:${px}px;height:${px}px;border-radius:50%;background:${color};color:#fff;font-size:${Math.max(9, Math.round(px * 0.55))}px;font-weight:700;vertical-align:middle;flex-shrink:0;`;
-  imgEl.parentNode.replaceChild(span, imgEl);
-};
-
-function getTickerIconHtml(ticker, name, size, color) {
-  const domain = TICKER_DOMAINS[ticker];
-  const px = size || 18;
-  const col = color || tickerColor(ticker);
-  const initial = ((name || ticker).trim().charAt(0)) || ticker.charAt(0);
-  if (!domain) {
-    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${px}px;height:${px}px;border-radius:50%;background:${col};color:#fff;font-size:${Math.max(9, Math.round(px * 0.55))}px;font-weight:700;vertical-align:middle;flex-shrink:0;">${initial}</span>`;
-  }
-  return `<img src="${getLogoUrl(domain)}" alt="${ticker}" style="width:${px}px;height:${px}px;object-fit:contain;border-radius:4px;vertical-align:middle;" onerror='window.tickerLogoFallback(this, "${initial}", "${col}", ${px})'>`;
-}
-
 // 安全抓取 JSON，防止 404 網頁導致 Safari 拋出 SyntaxError
 async function fetchSafeJson(url, fallback) {
   try {
@@ -313,7 +267,7 @@ function renderScoreboard(config, seriesByAI, prices, transactions) {
               <span class="name">${ai.name}</span>
             </div>
             <div class="value-big mono">NT$ ${fmtMoney(today.value)}</div>
-            <div class="ret ${unrealizedUp ? 'up' : 'down'} mono">
+            <div class="ret ${dailyUp ? 'up' : 'down'} mono">
               未實現 P&L: ${fmtMoney(unrealizedAmt)} / ${fmtPct(unrealizedPct)}
             </div>
             <div class="ret ${totalPlUp ? 'up' : 'down'} mono" style="margin-top:4px; font-size:12px;">
@@ -371,13 +325,18 @@ function getLogoImg(aiId) {
   if (!LOGOS[aiId]) return null;
   if (!logoImgCache[aiId]) {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // 注意：這裡故意不設定 crossOrigin，因為 getlogo.dev 不一定會回傳 CORS header，
+    // 設定 crossOrigin='anonymous' 反而可能導致圖片載入失敗(靜默失敗、logo消失不見)。
+    // 我們只需要把圖畫上 canvas，不需要用 getImageData/toDataURL 讀取像素，所以不需要 CORS。
     img.onload = () => { if (mainChart) mainChart.draw(); };
+    img.onerror = () => { /* 載入失敗就不畫 logo，仍保留百分比標籤 */ };
     img.src = LOGOS[aiId];
     logoImgCache[aiId] = img;
   }
   return logoImgCache[aiId];
 }
+// 頁面載入時就先預熱三個 AI 的 logo 圖片，讓走勢圖第一次畫出來時 logo 大機率已經就緒
+Object.keys(LOGOS).forEach(aiId => getLogoImg(aiId));
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -404,33 +363,39 @@ function makeEndpointLabelPlugin(config) {
         const x = lastPoint.x;
         const y = lastPoint.y;
         const aiMatch = config.ais.find(a => a.name === ds.label);
+        const logoSize = 18;
+        const gap = 6;
 
         ctx.save();
 
-        // 終點 Logo(僅限 AI 資產)
+        // 標籤群組(logo + 百分比)整體往線的終點右側偏移，logo 在前、百分比在後
+        let cursorX = x + 8;
+        const centerY = y;
+
+        // 終點 Logo(僅限 AI 資產，放在百分比標籤「前面」)
         if (aiMatch) {
           const img = getLogoImg(aiMatch.id);
-          const logoSize = 18;
           if (img && img.complete && img.naturalWidth > 0) {
             ctx.save();
             ctx.beginPath();
-            ctx.arc(x, y, logoSize / 2 + 2, 0, Math.PI * 2);
-            ctx.fillStyle = '#000';
+            ctx.arc(cursorX + logoSize / 2, centerY, logoSize / 2 + 2, 0, Math.PI * 2);
+            ctx.fillStyle = '#0d0d0d';
             ctx.fill();
             ctx.clip();
-            ctx.drawImage(img, x - logoSize / 2, y - logoSize / 2, logoSize, logoSize);
+            ctx.drawImage(img, cursorX, centerY - logoSize / 2, logoSize, logoSize);
             ctx.restore();
+            cursorX += logoSize + gap;
           }
         }
 
-        // 終點數據標籤(色底白字)
+        // 終點數據標籤(色底白字)，緊接在 logo 後面
         ctx.font = '700 11px Inter, sans-serif';
         const textWidth = ctx.measureText(text).width;
         const padX = 7;
         const pillW = textWidth + padX * 2;
         const pillH = 18;
-        const pillX = x + 14;
-        const pillY = y - pillH / 2;
+        const pillX = cursorX;
+        const pillY = centerY - pillH / 2;
 
         ctx.fillStyle = color;
         roundRect(ctx, pillX, pillY, pillW, pillH, 9);
@@ -610,7 +575,7 @@ function renderHoldingsView(config, seriesByAI, prices, transactions) {
 
         legendRows += `
           <tr>
-            <td><span class="color-box" style="background:${cStr}"></span>${getTickerIconHtml(td.ticker, td.txName, 16, cStr)} <span class="mono">${td.ticker}</span> ${td.txName}</td>
+            <td><span class="color-box" style="background:${cStr}"></span><span class="mono">${td.ticker}</span> ${td.txName}</td>
             <td class="mono" style="text-align:right">${fmtMoney(td.val)}</td>
             <td class="mono" style="text-align:right">${pctOfPort.toFixed(1)}%</td>
             <td class="mono" style="text-align:right; color:${up?'var(--up)':'var(--down)'}">${fmtPct(td.unplPct)}</td>
@@ -796,7 +761,7 @@ function renderTransactions(config, transactions) {
         <td><span class="ai-tag" style="color:${aiInfo?.color}; display:flex; align-items:center; gap:6px;">${icon} ${t.ai}</span></td>
         <td class="mono">${t.week ?? '-'}</td>
         <td><span class="pill ${t.action}">${t.action === 'buy' ? '買進' : '賣出'}</span></td>
-        <td class="mono"><span style="display:inline-flex;align-items:center;gap:6px;">${getTickerIconHtml(t.ticker, t.name)} ${t.ticker} ${t.name || ''}</span></td>
+        <td class="mono">${t.ticker} ${t.name || ''}</td>
         <td class="mono">${t.shares}</td>
         <td class="mono">${t.price}</td>
         <td class="mono">${fmtMoney(t.amount)}</td>
