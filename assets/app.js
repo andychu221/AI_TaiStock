@@ -11,10 +11,10 @@ const LOGOS = {
 // 這裡不用第三方 logo 圖片(元大/統一證的官方 logo 文字很多、且小型網域不一定查得到)，
 // 改成自己畫的「色塊 + 兩個字」標記，保證任何情況下都清楚可辨、不會有載入失敗的問題。
 const BENCHMARKS = [
-  { ticker: '2330',   name: '台積電',        mark: '台積', color: '#0466C8' },
-  { ticker: '0050',   name: '元大台灣50',    mark: '元大', color: '#D62839' },
-  { ticker: '00631L', name: '元大台灣50正2', mark: '元大', color: '#D62839' },
-  { ticker: '00981A', name: '統一台股增長',  mark: '統一', color: '#F77F00' },
+  { ticker: '2330',   name: '台積電',        mark: '台積', color: '#0466C8' ,domain: 'tsmc.com'},
+  { ticker: '0050',   name: '元大台灣50',    mark: '元大', color: '#D62839' ,domain: 'yuanta.com'},
+  { ticker: '00631L', name: '元大台灣50正2', mark: '元大', color: '#D62839' ,domain: 'yuanta.com'},
+  { ticker: '00981A', name: '統一台股增長',  mark: '統一', color: '#F77F00' ,domain: 'uni-president.com'},
 ];
 
 // 安全抓取 JSON，防止 404 網頁導致 Safari 拋出 SyntaxError
@@ -347,6 +347,7 @@ function getImgByUrl(url) {
 function getLogoImg(aiId) { return getImgByUrl(LOGOS[aiId]); }
 // 頁面載入時就先預熱 AI 的 logo 圖片，讓走勢圖第一次畫出來時 logo 大機率已經就緒
 Object.keys(LOGOS).forEach(aiId => getLogoImg(aiId));
+BENCHMARKS.forEach(b => getImgByUrl(getLogoUrl(b.domain)));
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
