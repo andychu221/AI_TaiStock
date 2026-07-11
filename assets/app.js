@@ -394,19 +394,6 @@ function makeEndpointLabelPlugin() {
           ctx.drawImage(img, cursorX, centerY - logoSize / 2, logoSize, logoSize);
           ctx.restore();
           cursorX += logoSize + gap;
-        } else if (ds._badge) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(cursorX + logoSize / 2, centerY, logoSize / 2 + 2, 0, Math.PI * 2);
-          ctx.fillStyle = ds._badge.color;
-          ctx.fill();
-          ctx.fillStyle = '#FFFFFF';
-          ctx.font = '700 8px "Noto Sans TC", "PingFang TC", sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(ds._badge.mark, cursorX + logoSize / 2, centerY + 0.5);
-          ctx.restore();
-          cursorX += logoSize + gap;
         }
 
         // 終點數據標籤(色底白字)，緊接在 logo 後面
