@@ -383,5 +383,16 @@
     "shares": 94,
     "price": 1950,
     "note": ""
+  },
+  {
+    "ai": "chatgpt",
+    "week": 4,
+    "date": "2026-07-13",
+    "action": "sell",
+    "ticker": "3665",
+    "name": "貿聯-KY",
+    "shares": 53,
+    "price": 1865,
+    "note": ""
   }
 ]
