@@ -438,5 +438,16 @@
     "shares": 77,
     "price": 650,
     "note": ""
+  },
+  {
+    "ai": "gemini",
+    "week": 4,
+    "date": "2026-07-13",
+    "action": "sell",
+    "ticker": "2449",
+    "name": "京元電",
+    "shares": 417,
+    "price": 310,
+    "note": ""
   }
 ]
