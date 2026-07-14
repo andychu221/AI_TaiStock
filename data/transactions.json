@@ -449,5 +449,16 @@
     "shares": 417,
     "price": 310,
     "note": ""
+  },
+  {
+    "ai": "gemini",
+    "week": 4,
+    "date": "2026-07-13",
+    "action": "sell",
+    "ticker": "2327",
+    "name": "國巨",
+    "shares": 179,
+    "price": 843,
+    "note": ""
   }
 ]
