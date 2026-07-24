@@ -625,5 +625,39 @@
     "shares": 155,
     "price": 1270 ,
     "note": ""
+  },
+  {
+    "ai": "gemini",
+    "week": 5,
+    "date": "2026-07-20",
+    "action": "buy",
+    "ticker": "2412",
+    "name": "中華電",
+    "shares": 1085,
+    "price": 138,
+    "note": ""
+  },
+  {
+    "ai": "gemini",
+    "week": 5,
+    "date": "2026-07-20",
+    "action": "buy",
+    "ticker": "1216",
+    "name": "統一",
+    "shares": 1870,
+    "price": 80,
+    "note": ""
+  },
+  {
+    "ai": "gemini",
+    "week": 4,
+    "date": "2026-07-20",
+    "action": "buy",
+    "ticker": "2886",
+    "name": "兆豐金",
+    "shares":3130 ,
+    "price": 47.8,
+    "note": ""
   }
+  
 ]
