@@ -680,5 +680,16 @@
     "shares": 25,
     "price": 7970,
     "note": ""
+  },
+  {
+    "ai": "gemini",
+    "week": 5,
+    "date": "2026-07-20",
+    "action": "sell",
+    "ticker": "2368",
+    "name": "金像電",
+    "shares": 140,
+    "price": 925,
+    "note": ""
   }
 ]
