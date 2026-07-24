@@ -669,5 +669,16 @@
     "shares": 135,
     "price": 1130,
     "note": ""
+  },
+  {
+    "ai": "gemini",
+    "week": 5,
+    "date": "2026-07-20",
+    "action": "sell",
+    "ticker": "2059",
+    "name": "川湖",
+    "shares": 25,
+    "price": 7970,
+    "note": ""
   }
 ]
