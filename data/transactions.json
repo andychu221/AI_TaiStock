@@ -548,5 +548,84 @@
     "shares": 25,
     "price": 6100,
     "note": ""
-  }
+  },
+  {
+    "ai": "claude",
+    "week": 5,
+    "date": "2026-07-20",
+    "action": "sell",
+    "ticker": "2454",
+    "name": "聯發科",
+    "shares": 35,
+    "price": 3355,
+    "note": ""
+  },
+  {
+    "ai": "claude",
+    "week": 5,
+    "date": "2026-07-20",
+    "action": "sell",
+    "ticker": "3711",
+    "name": "日月光",
+    "shares":7 ,
+    "price":600 ,
+    "note": ""
+  },
+  {
+    "ai": "claude",
+    "week": 5,
+    "date": "2026-07-20",
+    "action": "sell",
+    "ticker": "2408",
+    "name": "南亞科",
+    "shares":350,
+    "price": 396,
+    "note": ""
+  },
+  {
+    "ai": "claude",
+    "week": 5,
+    "date": "2026-07-20",
+    "action": "sell",
+    "ticker": "3037",
+    "name": "欣興",,
+    "shares":100 ,
+    "price": 778 ,
+    "note": ""
+  },
+  {
+    "ai": "claude",
+    "week": 5,
+    "date": "2026-07-20",
+    "action": "buy",
+    "ticker": "2317",
+    "name": "鴻海",,
+    "shares": ,
+    "price":  ,
+    "note": ""
+  },
+  {
+    "ai": "claude",
+    "week": 5,
+    "date": "2026-07-20",
+    "action": "buy",
+    "ticker": "6505",
+    "name": "台塑化",,
+    "shares": ,
+    "price":  ,
+    "note": ""
+  },
+  {
+    "ai": "claude",
+    "week": 5,
+    "date": "2026-07-20",
+    "action": "buy",
+    "ticker": "6488",
+    "name": "環球晶",,
+    "shares": 1,
+    "price": 1270 ,
+    "note": ""
+  },
+  
+  
 ]
